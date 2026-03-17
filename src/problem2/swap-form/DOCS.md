@@ -2,17 +2,9 @@
 
 ## 1. Folder Structure
 
-```
+```text
+
 swap-form/
-├── index.html                        # HTML shell — loads Google Fonts, mounts #root
-├── package.json                      # Dependencies and npm scripts
-├── tsconfig.json                     # Root TS config — references app + node configs
-├── tsconfig.app.json                 # TS config for src/ (strict, verbatimModuleSyntax)
-├── tsconfig.node.json                # TS config for vite.config.ts
-├── vite.config.ts                    # Vite config — React plugin only
-├── eslint.config.js                  # ESLint flat config with react-hooks + react-refresh
-├── public/
-│   └── favicon.svg                   # Browser tab icon
 ├── src/
 │   ├── main.tsx                      # Entry point — renders <App /> into #root
 │   ├── index.css                     # Global reset, CSS variables, body background
@@ -29,10 +21,6 @@ swap-form/
 │   │   └── useTokenPrices.ts         # Fetches, deduplicates, and exposes token prices
 │   ├── utils/
 │   │   └── fmt.ts                    # Number formatting utility
-│   └── assets/
-│       ├── react.svg                 # Default Vite scaffold asset (unused)
-│       └── vite.svg                  # Default Vite scaffold asset (unused)
-└── dist/                             # Production build output (git-ignored)
 ```
 
 ---
@@ -106,7 +94,7 @@ npx tsc --noEmit
 
 **Deduplication logic:**
 
-```
+```text
 Raw API response (may contain duplicates):
   [
     { currency: "ETH", price: 1645.93, date: "2023-11-28T..." },
