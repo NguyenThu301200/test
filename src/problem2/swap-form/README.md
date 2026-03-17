@@ -1,73 +1,132 @@
-# React + TypeScript + Vite
+# Currency Swap Form — Documentation
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## UI Screenshots
 
-Currently, two official plugins are available:
+### Token Selector
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+![Token Selector](docs/assets/token-modal.png)
 
-## React Compiler
+### Input Validation
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+![Validation Error](docs/assets/validation-error.png)
 
-## Expanding the ESLint configuration
+### Swap Filled
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+![Swap Filled](docs/assets/swap-filled.png)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Swap Success
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+![Swap Success](docs/assets/swap-success.png)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Default State
+
+![Default State](docs/assets/swap-empty.png)
+
+## 1. Folder Structure
+
+```text
+
+swap-form/
+├── src/
+│   ├── main.tsx                      # Entry point — renders <App /> into #root
+│   ├── index.css                     # Global reset, CSS variables, body background
+│   ├── App.tsx                       # Root component — all state, derived values, layout
+│   ├── App.module.css                # Styles for App (card, flip, confirm, success, loading)
+│   ├── components/
+│   │   ├── TokenIcon.tsx             # Token icon img with fallback to colored initials
+│   │   ├── TokenIcon.module.css      # Styles for TokenIcon (icon, fallback circle)
+│   │   ├── TokenPanel.tsx            # One send/receive panel — input + token selector btn
+│   │   ├── TokenPanel.module.css     # Styles for TokenPanel (panel, input, token button)
+│   │   ├── TokenModal.tsx            # Searchable token selector modal
+│   │   └── TokenModal.module.css     # Styles for TokenModal (overlay, search, list, items)
+│   ├── hooks/
+│   │   └── useTokenPrices.ts         # Fetches, deduplicates, and exposes token prices
+│   ├── utils/
+│   │   └── fmt.ts                    # Number formatting utility
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 2. Setup
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Prerequisites
+
+- **Node.js** ≥ 18.0.0 (uses ES2023 target and ESNext modules)
+- **npm** ≥ 9
+
+### Steps
+
+```bash
+# 1. Clone the repository and navigate to the project
+cd src/problem2/swap-form
+
+# 2. Install dependencies
+npm install
+
+# 3. Start the dev server
+npm run dev
+# → opens at http://localhost:5173/
+```
+
+### Environment Variables
+
+No `.env.local` is required. The only external data source is hardcoded:
+
+| Variable | Default                                                                           | Description                                        |
+| -------- | --------------------------------------------------------------------------------- | -------------------------------------------------- |
+| _none_   | `https://interview.switcheo.com/prices.json`                                      | Token price API (hardcoded in `useTokenPrices.ts`) |
+| _none_   | `https://raw.githubusercontent.com/Switcheo/token-icons/main/tokens/{SYMBOL}.svg` | Token icon CDN (hardcoded in `TokenIcon.tsx`)      |
+
+To change either URL, edit the corresponding constant directly in the source file.
+
+---
+
+## 3. Scripts
+
+| Script    | Command           | Description                                                                   | URL                      |
+| --------- | ----------------- | ----------------------------------------------------------------------------- | ------------------------ |
+| `dev`     | `npm run dev`     | Starts the Vite dev server with HMR                                           | `http://localhost:5173/` |
+| `build`   | `npm run build`   | Runs `tsc -b` (type-check) then `vite build` (production bundle into `dist/`) | —                        |
+| `preview` | `npm run preview` | Serves the `dist/` folder locally (run `build` first)                         | `http://localhost:4173/` |
+| `lint`    | `npm run lint`    | Runs ESLint across the project                                                | —                        |
+
+To type-check without building:
+
+```bash
+npx tsc --noEmit
+```
+
+## 4. Hooks
+
+### 4.1 `useTokenPrices` — `src/hooks/useTokenPrices.ts`
+
+```typescript
+/**
+ * Fetches token prices from the Switcheo interview API, deduplicates
+ * entries by currency (keeping the one with the latest date), filters out
+ * entries where price is null or undefined, and returns the result sorted
+ * alphabetically by currency symbol.
+ *
+ * Runs once on mount. Handles component unmount via a cancellation flag
+ * to prevent state updates on unmounted components.
+ */
+```
+
+**When to use:** Call once at the app root (`App.tsx`) and pass the resulting `tokens` array down to child components. Do not call in multiple components — the hook issues a fresh `fetch` on every mount.
+
+**Deduplication logic:**
+
+```text
+Raw API response (may contain duplicates):
+  [
+    { currency: "ETH", price: 1645.93, date: "2023-11-28T..." },
+    { currency: "ETH", price: 1640.00, date: "2023-11-27T..." },
+    { currency: "BTC", price: null,    date: "2023-11-28T..." }
+  ]
+
+After deduplication:
+  [
+    { currency: "ETH", price: 1645.93, date: "2023-11-28T..." }
+  ]
+  // Second ETH dropped (older date), BTC dropped (null price)
 ```
