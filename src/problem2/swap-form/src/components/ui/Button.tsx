@@ -5,24 +5,24 @@ import { cn } from "@/lib/utils";
 
 const variantClasses = {
   primary: [
-    "w-full rounded-2xl border-none bg-gradient-to-br from-[var(--amber)] to-[#e8941a]",
-    "font-[var(--font-sans)] font-semibold text-[#0d0d14]",
-    "transition-all duration-150",
-    "hover:not-disabled:-translate-y-px hover:not-disabled:opacity-90",
-    "active:not-disabled:translate-y-0",
-    "disabled:cursor-not-allowed disabled:opacity-40",
+    "w-full rounded-xl border-none bg-[var(--binance-yellow)]",
+    "font-[var(--font-sans)] font-medium text-[#181a20]",
+    "transition-opacity duration-150",
+    "hover:not-disabled:opacity-90",
+    "active:not-disabled:scale-[0.98]",
+    "disabled:cursor-not-allowed disabled:bg-[#2b3139] disabled:text-[#848e9c]",
   ].join(" "),
   ghost: [
-    "rounded-xl border border-white/10 bg-white/6",
-    "font-[var(--font-sans)] font-semibold text-white",
+    "rounded-xl border border-transparent bg-transparent",
+    "font-[var(--font-sans)] font-medium text-[var(--text-primary)]",
     "transition-colors duration-150",
-    "hover:border-[var(--amber)]/30 hover:bg-white/10",
+    "hover:bg-[var(--border-color)]",
   ].join(" "),
   icon: [
-    "flex items-center justify-center rounded-xl border-2 border-white/10",
-    "bg-[#1a1a2e] text-white/60",
+    "flex items-center justify-center rounded-xl border-[4px] border-[var(--panel-bg)]",
+    "bg-[#2b3139] text-[var(--text-primary)]",
     "transition-all duration-200",
-    "hover:rotate-180 hover:border-[var(--amber)]/40 hover:text-[var(--amber)]",
+    "hover:bg-[#3b434e]",
   ].join(" "),
 } as const;
 
@@ -49,10 +49,6 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
-/**
- * Reusable button primitive with variant and size support.
- * Accepts all native button attributes and merges className via cn().
- */
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {

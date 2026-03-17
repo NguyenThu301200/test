@@ -21,11 +21,21 @@ export const SwapMath = {
     if (rate === null || isNaN(amount)) return null;
     return amount * rate;
   },
+};
 
-  toUsd: (amount: number | null, price: number | undefined): number | null => {
-    if (amount === null || price === undefined || isNaN(amount)) return null;
-    return amount * price;
-  },
+export const getTokenLimits = (currency: string | undefined): { min: number, max: number } => {
+  if (!currency) return { min: 0, max: 0 };
+  const sym = currency.toUpperCase();
+  if (sym === "USDT" || sym === "USDC") return { min: 10, max: 1_000_000 };
+  if (sym === "ETH") return { min: 0.005, max: 500 };
+  if (sym === "BTC") return { min: 0.0001, max: 10 };
+  return { min: 1, max: 500_000 };
+};
+
+export const getPlaceholder = (token: Token | null): string => {
+  if (!token) return "0.00";
+  const { min, max } = getTokenLimits(token.currency);
+  return `${min.toLocaleString()} - ${max.toLocaleString()}`;
 };
 
 export const SwapValidator = {
@@ -37,7 +47,12 @@ export const SwapValidator = {
   ): string | null => {
     if (!input.trim()) return null;
     if (isNaN(parsedAmount)) return "Enter a valid number";
+    
+    const { min, max } = getTokenLimits(fromToken?.currency);
+
     if (parsedAmount <= 0) return "Amount must be greater than 0";
+    if (parsedAmount < min) return `Minimum amount is ${min.toLocaleString()}`;
+    if (parsedAmount > max) return `Maximum amount is ${max.toLocaleString()}`;
     if (fromToken?.currency === toToken?.currency)
       return "Cannot swap the same token";
     return null;

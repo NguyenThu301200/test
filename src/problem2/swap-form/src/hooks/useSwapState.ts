@@ -19,8 +19,6 @@ export function useSwapState({
     parsedAmount,
     exchangeRate,
     outputAmount,
-    fromUsd,
-    toUsd,
     validationError,
   } = useMemo(() => {
     const parsedAmount = SwapMath.parseAmount(inputAmount);
@@ -31,8 +29,6 @@ export function useSwapState({
       parsedAmount,
       exchangeRate,
       outputAmount,
-      fromUsd: SwapMath.toUsd(parsedAmount, fromToken?.price),
-      toUsd: SwapMath.toUsd(outputAmount, toToken?.price),
       validationError: SwapValidator.getValidationError(
         inputAmount,
         parsedAmount,
@@ -53,8 +49,6 @@ export function useSwapState({
     parsedAmount,
     exchangeRate,
     outputAmount,
-    fromUsd,
-    toUsd,
     validationError,
     canConfirm,
   };
