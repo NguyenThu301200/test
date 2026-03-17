@@ -1,114 +1,81 @@
-import { useState, useMemo, useCallback } from "react";
-import { useTokenPrices } from "./hooks/useTokenPrices";
-import type { Token } from "./hooks/useTokenPrices";
+import { useState, useCallback, useEffect } from "react";
+import { ArrowUpDown, CheckCircle2 } from "lucide-react";
+import { useTokenPrices, type Token } from "./hooks/useTokenPrices";
+import { useSwapState } from "./hooks/useSwapState";
+import { DECIMALS, SWAP_DELAY_MS } from "./utils/swap-logic";
+import { fmt } from "./utils/fmt";
+
+// Components
 import { TokenPanel } from "./components/TokenPanel";
 import { TokenModal } from "./components/TokenModal";
-import { fmt } from "./utils/fmt";
-import styles from "./App.module.css";
+import { Button, Spinner } from "@/components/ui";
 
-/** Tracks which panel opened the token selector modal. */
+/** Layout Wrapper cô lập styling */
+const SwapCardWrapper = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex min-h-screen items-center justify-center p-6">
+    <div className="w-md max-w-full rounded-3xl border border-white/6 bg-white/2 p-7 shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_20px_60px_rgba(0,0,0,0.4)]">
+      {children}
+    </div>
+  </div>
+);
+
 type ModalTarget = "from" | "to" | null;
 
-/** Data displayed on the success screen after a swap. */
 interface SuccessInfo {
-  /** Formatted input amount (e.g. "100.000000") */
   fromAmount: string;
-  /** Source token symbol (e.g. "ETH") */
   fromSymbol: string;
-  /** Formatted output amount (e.g. "164,593.373700") */
   toAmount: string;
-  /** Destination token symbol (e.g. "USD") */
   toSymbol: string;
 }
 
-/**
- * Root component — holds all state and derived computations.
- * Renders two TokenPanels, a flip button, exchange rate, validation errors,
- * and a confirm button with simulated swap flow.
- */
 function App() {
+  // 1. Data Fetching
   const {
     tokens,
     loading: tokensLoading,
     error: tokensError,
   } = useTokenPrices();
 
-  // Currently selected source token
+  // 2. Local State
   const [fromToken, setFromToken] = useState<Token | null>(null);
-  // Currently selected destination token
   const [toToken, setToToken] = useState<Token | null>(null);
-  // Raw string from the amount input
   const [inputAmount, setInputAmount] = useState("");
-  // Which panel opened the token selector (null = modal closed)
   const [modalTarget, setModalTarget] = useState<ModalTarget>(null);
-  // True during the 1.5s simulated swap
   const [swapping, setSwapping] = useState(false);
-  // Populated after a successful swap; triggers the success screen
   const [success, setSuccess] = useState<SuccessInfo | null>(null);
 
-  // — Derived values —
-  // Parsed from inputAmount, NaN if invalid
-  const parsedAmount = useMemo(() => {
-    const n = Number(inputAmount);
-    return Number.isFinite(n) ? n : NaN;
-  }, [inputAmount]);
+  // 3. Logic Hook (Tách biệt phần tính toán)
+  const {
+    parsedAmount,
+    exchangeRate,
+    outputAmount,
+    fromUsd,
+    toUsd,
+    validationError,
+    canConfirm,
+  } = useSwapState({ inputAmount, fromToken, toToken, isSwapping: swapping });
 
-  // Exchange rate: from  → to
-  const exchangeRate = useMemo(() => {
-    if (!fromToken || !toToken || toToken.price === 0) return null;
-    return fromToken.price / toToken.price;
-  }, [fromToken, toToken]);
-
-  // Output amount = input amount * exchange rate
-  const outputAmount = useMemo(() => {
-    if (exchangeRate === null || isNaN(parsedAmount)) return null;
-    return parsedAmount * exchangeRate;
-  }, [parsedAmount, exchangeRate]);
-
-  // From token USD value
-  const fromUsd = useMemo(() => {
-    if (!fromToken || isNaN(parsedAmount)) return null;
-    return parsedAmount * fromToken.price;
-  }, [parsedAmount, fromToken]);
-
-  // To token USD value
-  const toUsd = useMemo(() => {
-    if (!toToken || outputAmount === null) return null;
-    return outputAmount * toToken.price;
-  }, [outputAmount, toToken]);
-
-  // Validation
-  const validationError = useMemo(() => {
-    if (!inputAmount.trim()) return null; // don't show error on empty
-    if (isNaN(parsedAmount)) return "Enter a valid number";
-    if (parsedAmount <= 0) return "Amount must be greater than 0";
-    if (fromToken && toToken && fromToken.currency === toToken.currency) {
-      return "Cannot swap the same token";
+  useEffect(() => {
+    if (tokens.length > 0 && !fromToken && !toToken) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFromToken(tokens.find((t) => t.currency === "ETH") || tokens[0]);
+      setToToken(
+        tokens.find((t) => t.currency === "USDC") || tokens[1] || tokens[0],
+      );
     }
-    return null;
-  }, [inputAmount, parsedAmount, fromToken, toToken]);
+  }, [tokens, fromToken, toToken]);
 
-  // Condition to confirm swap
-  const canConfirm = useMemo(() => {
-    return (
-      !swapping &&
-      fromToken !== null &&
-      toToken !== null &&
-      !isNaN(parsedAmount) &&
-      parsedAmount > 0 &&
-      fromToken.currency !== toToken.currency &&
-      validationError === null
-    );
-  }, [swapping, fromToken, toToken, parsedAmount, validationError]);
-
-  // Swap fromToken ↔ toToken positions and clear the input
+  // 5. Handlers
   const handleFlip = useCallback(() => {
     setFromToken(toToken);
     setToToken(fromToken);
-    setInputAmount("");
-  }, [fromToken, toToken]);
+    if (outputAmount && outputAmount > 0) {
+      setInputAmount(Number(outputAmount.toFixed(DECIMALS)).toString());
+    } else {
+      setInputAmount("");
+    }
+  }, [fromToken, toToken, outputAmount]);
 
-  // Handle token selection from modal
   const handleSelectToken = useCallback(
     (token: Token) => {
       if (modalTarget === "from") setFromToken(token);
@@ -118,164 +85,132 @@ function App() {
     [modalTarget],
   );
 
-  // Simulate a 1.5s swap, then show success screen
   const handleConfirm = useCallback(() => {
     if (!canConfirm || !fromToken || !toToken || outputAmount === null) return;
     setSwapping(true);
+
     setTimeout(() => {
       setSwapping(false);
       setSuccess({
-        fromAmount: fmt(parsedAmount, 6),
+        fromAmount: fmt(parsedAmount, DECIMALS),
         fromSymbol: fromToken.currency,
-        toAmount: fmt(outputAmount, 6),
+        toAmount: fmt(outputAmount, DECIMALS),
         toSymbol: toToken.currency,
       });
-    }, 1500);
+    }, SWAP_DELAY_MS);
   }, [canConfirm, fromToken, toToken, outputAmount, parsedAmount]);
 
-  // Clear success state and input to start a new swap
   const handleReset = useCallback(() => {
     setSuccess(null);
     setInputAmount("");
   }, []);
 
-  // — Loading / Error states —
-  if (tokensLoading) {
+  // 6. Render Logic
+  if (tokensLoading)
     return (
-      <div className={styles.container}>
-        <div className={styles.card}>
-          <div className={styles.loading}>
-            <div className={styles.spinner} />
-            <span>Loading tokens…</span>
-          </div>
+      <SwapCardWrapper>
+        <div className="flex flex-col items-center gap-4 py-12 text-sm text-white/50">
+          <Spinner size={32} className="text-[var(--amber)]" />
+          <span>Loading tokens…</span>
         </div>
-      </div>
+      </SwapCardWrapper>
     );
-  }
 
-  if (tokensError) {
+  if (tokensError)
     return (
-      <div className={styles.container}>
-        <div className={styles.card}>
-          <div className={styles.errorState}>
-            <span>⚠️ {tokensError}</span>
-          </div>
+      <SwapCardWrapper>
+        <div className="py-12 text-center text-sm text-red-400">
+          <span>⚠️ {tokensError}</span>
         </div>
-      </div>
+      </SwapCardWrapper>
     );
-  }
 
-  // — Success state —
-  if (success) {
+  if (success)
     return (
-      <div className={styles.container}>
-        <div className={styles.card}>
-          <div className={styles.successState}>
-            <div className={styles.successIcon}>✓</div>
-            <h2 className={styles.successTitle}>Swap Successful</h2>
-            <p className={styles.successDetail}>
-              {success.fromAmount} {success.fromSymbol} → {success.toAmount}{" "}
-              {success.toSymbol}
-            </p>
-            <button
-              type="button"
-              className={styles.resetBtn}
-              onClick={handleReset}
-            >
-              New Swap
-            </button>
+      <SwapCardWrapper>
+        <div className="flex flex-col items-center gap-3 py-8">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white">
+            <CheckCircle2 size={48} />
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // — Main swap form —
-  return (
-    <div className={styles.container}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Swap</h1>
-
-        {/* Send panel — editable amount input */}
-        <TokenPanel
-          label="You send"
-          token={fromToken}
-          amount={inputAmount}
-          usdValue={fromUsd}
-          onAmountChange={setInputAmount}
-          onOpenSelector={() => setModalTarget("from")}
-        />
-
-        {/* Flip button — swaps fromToken ↔ toToken */}
-        <div className={styles.flipWrap}>
-          <button
-            type="button"
-            className={styles.flipBtn}
-            onClick={handleFlip}
-            aria-label="Swap tokens"
+          <h2 className="m-0 text-xl font-semibold text-white">
+            Swap Successful
+          </h2>
+          <p className="m-0 font-[var(--font-mono)] text-sm text-white/60">
+            {success.fromAmount} {success.fromSymbol} → {success.toAmount}{" "}
+            {success.toSymbol}
+          </p>
+          <Button
+            variant="ghost"
+            size="md"
+            className="mt-2 px-8"
+            onClick={handleReset}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M4 6L8 2L12 6"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M12 10L8 14L4 10"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+            <span className="text-[var(--amber)]">New Swap</span>
+          </Button>
         </div>
+      </SwapCardWrapper>
+    );
 
-        {/* Receive panel — read-only computed output */}
-        <TokenPanel
-          label="You receive"
-          token={toToken}
-          amount={outputAmount !== null ? fmt(outputAmount, 6) : ""}
-          usdValue={toUsd}
-          readOnly
-          onOpenSelector={() => setModalTarget("to")}
-        />
+  return (
+    <SwapCardWrapper>
+      <h1 className="m-0 mb-5 text-xl font-bold text-white">Swap</h1>
 
-        {/* Exchange rate line: "1 FROM = X.XXXXXX TO" */}
-        {exchangeRate !== null && fromToken && toToken && (
-          <div className={styles.rateRow}>
-            <span className={styles.rateLabel}>Exchange Rate</span>
-            <span className={styles.rateValue}>
-              1 {fromToken.currency} = {fmt(exchangeRate, 6)} {toToken.currency}
-            </span>
-          </div>
-        )}
+      <TokenPanel
+        label="You send"
+        token={fromToken}
+        amount={inputAmount}
+        usdValue={fromUsd}
+        onAmountChange={setInputAmount}
+        onOpenSelector={() => setModalTarget("from")}
+      />
 
-        {/* Inline error for invalid input */}
-        {validationError && (
-          <div className={styles.error}>{validationError}</div>
-        )}
-
-        <button
-          type="button"
-          className={styles.confirmBtn}
-          disabled={!canConfirm}
-          onClick={handleConfirm}
+      <div className="relative z-2 -my-1.5 flex justify-center">
+        <Button
+          variant="icon"
+          size="md"
+          onClick={handleFlip}
+          aria-label="Swap tokens"
         >
-          {swapping ? (
-            <div className={styles.btnLoading}>
-              <div className={styles.spinnerSmall} />
-              <span>Swapping…</span>
-            </div>
-          ) : (
-            "Confirm Swap"
-          )}
-        </button>
+          <ArrowUpDown size={16} />
+        </Button>
       </div>
 
-      {/* Token selector modal — opens when user clicks a token button */}
+      <TokenPanel
+        label="You receive"
+        token={toToken}
+        amount={outputAmount !== null ? fmt(outputAmount, DECIMALS) : ""}
+        usdValue={toUsd}
+        readOnly
+        onOpenSelector={() => setModalTarget("to")}
+      />
+
+      {exchangeRate !== null && fromToken && toToken && (
+        <div className="mt-1 flex items-center justify-between py-3">
+          <span className="text-xs text-white/40">Exchange Rate</span>
+          <span className="font-[var(--font-mono)] text-xs text-white/70">
+            1 {fromToken.currency} = {fmt(exchangeRate, DECIMALS)}{" "}
+            {toToken.currency}
+          </span>
+        </div>
+      )}
+
+      {validationError && (
+        <div className="mt-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-400">
+          {validationError}
+        </div>
+      )}
+
+      <Button
+        variant="primary"
+        size="lg"
+        className="mt-4 w-full"
+        disabled={!canConfirm}
+        loading={swapping}
+        onClick={handleConfirm}
+      >
+        {swapping ? "Swapping…" : "Confirm Swap"}
+      </Button>
+
       {modalTarget && (
         <TokenModal
           tokens={tokens}
@@ -283,7 +218,7 @@ function App() {
           onClose={() => setModalTarget(null)}
         />
       )}
-    </div>
+    </SwapCardWrapper>
   );
 }
 

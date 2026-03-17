@@ -31,14 +31,11 @@ swap-form/
 │   ├── main.tsx                      # Entry point — renders <App /> into #root
 │   ├── index.css                     # Global reset, CSS variables, body background
 │   ├── App.tsx                       # Root component — all state, derived values, layout
-│   ├── App.module.css                # Styles for App (card, flip, confirm, success, loading)
 │   ├── components/
 │   │   ├── TokenIcon.tsx             # Token icon img with fallback to colored initials
-│   │   ├── TokenIcon.module.css      # Styles for TokenIcon (icon, fallback circle)
 │   │   ├── TokenPanel.tsx            # One send/receive panel — input + token selector btn
-│   │   ├── TokenPanel.module.css     # Styles for TokenPanel (panel, input, token button)
 │   │   ├── TokenModal.tsx            # Searchable token selector modal
-│   │   └── TokenModal.module.css     # Styles for TokenModal (overlay, search, list, items)
+│   │   └── ui/                       # Shared primitives (Button, Input, Avatar, Spinner...)
 │   ├── hooks/
 │   │   └── useTokenPrices.ts         # Fetches, deduplicates, and exposes token prices
 │   ├── utils/

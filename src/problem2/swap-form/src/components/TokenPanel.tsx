@@ -1,7 +1,9 @@
-import { TokenIcon } from "./TokenIcon";
+import { useId } from "react";
+import * as LabelPrimitive from "@radix-ui/react-label";
+import { ChevronDown } from "lucide-react";
+import { Avatar, Button, Input } from "@/components/ui";
 import type { Token } from "../hooks/useTokenPrices";
 import { fmt } from "../utils/fmt";
-import styles from "./TokenPanel.module.css";
 
 interface TokenPanelProps {
   /** Header label (e.g. "You send") */
@@ -20,11 +22,6 @@ interface TokenPanelProps {
   onOpenSelector: () => void;
 }
 
-/**
- * A single swap panel (send or receive side).
- * Displays an amount input, a token selector button with icon,
- * and the USD equivalent in the header.
- */
 export function TokenPanel({
   label,
   token,
@@ -34,17 +31,27 @@ export function TokenPanel({
   onAmountChange,
   onOpenSelector,
 }: TokenPanelProps) {
+  const inputId = useId();
+
   return (
-    <div className={styles.panel}>
-      <div className={styles.header}>
-        <span className={styles.label}>{label}</span>
+    <div className="rounded-2xl border border-white/8 bg-white/3 px-5 py-4 transition-colors duration-200 focus-within:border-[var(--amber)]/40">
+      <div className="mb-2 flex items-center justify-between">
+        <LabelPrimitive.Root
+          htmlFor={inputId}
+          className="text-xs font-medium uppercase tracking-wide text-white/50"
+        >
+          {label}
+        </LabelPrimitive.Root>
         {usdValue !== null && usdValue > 0 && (
-          <span className={styles.usd}>≈ ${fmt(usdValue)}</span>
+          <span className="font-[var(--font-mono)] text-xs text-white/40">
+            ≈ ${fmt(usdValue)}
+          </span>
         )}
       </div>
-      <div className={styles.row}>
-        <input
-          className={styles.input}
+
+      <div className="flex items-center gap-3">
+        <Input
+          id={inputId}
           type="text"
           inputMode="decimal"
           placeholder="0.00"
@@ -52,35 +59,22 @@ export function TokenPanel({
           readOnly={readOnly}
           onChange={(e) => onAmountChange?.(e.target.value)}
         />
-        <button
-          type="button"
-          className={styles.tokenBtn}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="flex items-center gap-2 whitespace-nowrap"
           onClick={onOpenSelector}
         >
           {token ? (
             <>
-              <TokenIcon symbol={token.currency} size={24} />
-              <span className={styles.tokenSymbol}>{token.currency}</span>
+              <Avatar symbol={token.currency} size={24} />
+              <span className="font-semibold">{token.currency}</span>
             </>
           ) : (
-            <span className={styles.tokenPlaceholder}>Select token</span>
+            <span className="font-medium text-white/50">Select token</span>
           )}
-          <svg
-            className={styles.chevron}
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            fill="none"
-          >
-            <path
-              d="M3 4.5L6 7.5L9 4.5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+          <ChevronDown size={12} className="shrink-0 text-white/40" />
+        </Button>
       </div>
     </div>
   );
