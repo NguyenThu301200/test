@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 
 /**
  * Global error-handling middleware.
- * Must be registered as the LAST middleware in the Express app.
  * Catches all unhandled errors and returns a consistent error response.
  */
 export function errorHandler(

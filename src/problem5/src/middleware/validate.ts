@@ -37,13 +37,13 @@ export function validateCreateResource(
 
 /**
  * Validates the request body for updating a resource.
- * Same rules as create — both `name` and `status` are required.
+ * Both `name` and `status` are required.
  */
 export function validateUpdateResource(
   req: Request,
   res: Response,
   next: NextFunction,
 ): void {
-  // Same validation rules apply for full update
+  // name and status are required in update
   validateCreateResource(req, res, next);
 }
