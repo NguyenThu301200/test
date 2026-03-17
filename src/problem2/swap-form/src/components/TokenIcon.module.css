@@ -1,0 +1,17 @@
+.icon {
+  border-radius: 50%;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.fallback {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+  user-select: none;
+}
