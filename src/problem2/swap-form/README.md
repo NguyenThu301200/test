@@ -14,6 +14,10 @@
 
 ![Swap Filled](docs/assets/swap-filled.png)
 
+### Swap Preview
+
+![Swap Preview](docs/assets/swap-preview.png)
+
 ### Swap Success
 
 ![Swap Success](docs/assets/swap-success.png)
@@ -32,14 +36,18 @@ swap-form/
 │   ├── index.css                     # Global reset, CSS variables, body background
 │   ├── App.tsx                       # Root component — all state, derived values, layout
 │   ├── components/
-│   │   ├── TokenIcon.tsx             # Token icon img with fallback to colored initials
 │   │   ├── TokenPanel.tsx            # One send/receive panel — input + token selector btn
 │   │   ├── TokenModal.tsx            # Searchable token selector modal
+│   │   ├── PreviewModal.tsx          # Swap preview modal
 │   │   └── ui/                       # Shared primitives (Button, Input, Avatar, Spinner...)
 │   ├── hooks/
 │   │   └── useTokenPrices.ts         # Fetches, deduplicates, and exposes token prices
+│   │   └── useSwapState.ts           # Manages swap state and validation logic
+|   ├── lib/
+|   |   ├── utils.ts                  # tailwind config
 │   ├── utils/
 │   │   └── fmt.ts                    # Number formatting utility
+│   │   └── swap-logic.ts             # Swap logic and validation
 ```
 
 ---
